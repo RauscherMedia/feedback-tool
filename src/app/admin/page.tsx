@@ -10,6 +10,7 @@ import {
   type Feedback,
 } from "@/lib/supabase";
 import { Logo } from "@/components/Logo";
+import { AdminAuth } from "@/components/AdminAuth";
 
 export default function AdminPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -45,7 +46,8 @@ export default function AdminPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+<AdminAuth>
+        <div className="min-h-screen bg-surface-primary">
       {/* Header */}
       <header className="h-14 border-b border-surface-tertiary flex items-center justify-between px-6">
         <div className="flex items-center gap-4">
@@ -173,6 +175,7 @@ export default function AdminPage() {
         )}
       </main>
     </div>
+    </AdminAuth>
   );
 }
 

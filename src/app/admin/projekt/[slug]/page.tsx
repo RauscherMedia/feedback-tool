@@ -14,6 +14,7 @@ import {
   type Feedback,
 } from "@/lib/supabase";
 import { Logo } from "@/components/Logo";
+import { AdminAuth } from "@/components/AdminAuth";
 
 const STATUS_OPTIONS: { value: Feedback["status"]; label: string; color: string; bg: string }[] = [
   { value: "open", label: "OFFEN", color: "text-status-fail", bg: "bg-red-50" },
@@ -116,7 +117,8 @@ export default function AdminProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-primary">
+<AdminAuth>
+        <div className="min-h-screen bg-surface-primary">
       {/* Header */}
       <header className="h-14 border-b border-surface-tertiary flex items-center justify-between px-6">
         <div className="flex items-center gap-4">
@@ -338,5 +340,6 @@ export default function AdminProjectPage() {
         </div>
       </main>
     </div>
+    </AdminAuth>
   );
 }
