@@ -92,20 +92,25 @@ export default function ProjektPage() {
     category: string;
   }) => {
     if (!project || !activePage) return;
-    await createFeedback({
-      project_id: project.id,
-      page_id: activePage.id,
-      author: data.author,
-      comment: data.comment,
-      category: data.category,
-      pin_x: newPin?.x,
-      pin_y: newPin?.y,
-    });
-    setNewPin(null);
-    setCommentMode(false);
-    // Refresh feedbacks immediately
-    const updated = await getFeedbacks(project.id);
-    setFeedbacks(updated);
+    try {
+      await createFeedback({
+        project_id: project.id,
+        page_id: activePage.id,
+        author: data.author,
+        comment: data.comment,
+        category: data.category,
+        pin_x: newPin?.x ?? null,
+        pin_y: newPin?.y ?? null,
+      });
+      setNewPin(null);
+      setCommentMode(false);
+      // Refresh feedbacks immediately so the comment is visible right away
+      const updated = await getFeedbacks(project.id);
+      setFeedbacks(updated);
+    } catch (err) {
+      console.error("Failed to save feedback:", err);
+      throw err; // Re-throw so the form can show the error
+    }
   };
 
   if (loading) {

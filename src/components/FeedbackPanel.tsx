@@ -25,7 +25,7 @@ type Props = {
     author: string;
     comment: string;
     category: string;
-  }) => void;
+  }) => Promise<void>;
   onCancelNewPin: () => void;
 };
 
@@ -169,19 +169,30 @@ function NewFeedbackForm({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (data: { author: string; comment: string; category: string }) => void;
+  onSubmit: (data: { author: string; comment: string; category: string }) => Promise<void>;
   onCancel: () => void;
 }) {
   const [author, setAuthor] = useState("");
   const [comment, setComment] = useState("");
   const [category, setCategory] = useState("sonstiges");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!author.trim() || !comment.trim()) return;
-    onSubmit({ author: author.trim(), comment: comment.trim(), category });
-    setAuthor("");
-    setComment("");
+    if (!author.trim() || !comment.trim() || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await onSubmit({ author: author.trim(), comment: comment.trim(), category });
+      setAuthor("");
+      setComment("");
+    } catch (err) {
+      setError("Fehler beim Speichern. Bitte versuche es erneut.");
+      console.error("Feedback submit error:", err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -237,12 +248,16 @@ function NewFeedbackForm({
         ))}
       </div>
 
+      {error && (
+        <p className="text-red-500 text-xs mb-2">{error}</p>
+      )}
+
       <button
         type="submit"
-        disabled={!author.trim() || !comment.trim()}
+        disabled={!author.trim() || !comment.trim() || submitting}
         className="w-full bg-accent text-white font-headline text-sm uppercase tracking-wider py-2 rounded-md hover:bg-accent-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        Absenden
+        {submitting ? "Wird gespeichert..." : "Absenden"}
       </button>
     </form>
   );
