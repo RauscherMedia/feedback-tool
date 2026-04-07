@@ -149,6 +149,18 @@ function FeedbackCard({
           {cat.label}
         </span>
       )}
+
+      {/* Admin Reply */}
+      {feedback.admin_reply && (
+        <div className="mt-3 pl-3 border-l-2 border-accent/30 bg-orange-50/30 rounded-r-md py-2 pr-3">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-accent font-bold">
+            Rauscher Media
+          </span>
+          <p className="text-sm text-content-secondary leading-relaxed mt-1">
+            {feedback.admin_reply}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

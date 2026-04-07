@@ -103,7 +103,9 @@ export default function ProjektPage() {
     });
     setNewPin(null);
     setCommentMode(false);
-    // Feedbacks refresh via realtime subscription
+    // Refresh feedbacks immediately
+    const updated = await getFeedbacks(project.id);
+    setFeedbacks(updated);
   };
 
   if (loading) {

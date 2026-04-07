@@ -36,6 +36,7 @@ export type Feedback = {
   status: "open" | "in_progress" | "done";
   pin_x: number | null;
   pin_y: number | null;
+  admin_reply: string | null;
   created_at: string;
 };
 
@@ -96,6 +97,14 @@ export async function updateFeedbackStatus(
   const { error } = await supabase
     .from("feedbacks")
     .update({ status })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateFeedbackReply(id: string, admin_reply: string) {
+  const { error } = await supabase
+    .from("feedbacks")
+    .update({ admin_reply })
     .eq("id", id);
   if (error) throw error;
 }

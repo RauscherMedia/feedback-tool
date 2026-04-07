@@ -9,6 +9,7 @@ import {
   getPages,
   getFeedbacks,
   updateFeedbackStatus,
+  updateFeedbackReply,
   type Project,
   type Page,
   type Feedback,
@@ -40,6 +41,8 @@ export default function AdminProjectPage() {
   const [filterPage, setFilterPage] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   const loadData = async () => {
     try {
@@ -76,10 +79,19 @@ export default function AdminProjectPage() {
 
   const handleStatusChange = async (feedbackId: string, newStatus: Feedback["status"]) => {
     await updateFeedbackStatus(feedbackId, newStatus);
-    // Realtime will update, but also update locally for instant UI
     setFeedbacks((prev) =>
       prev.map((f) => (f.id === feedbackId ? { ...f, status: newStatus } : f))
     );
+  };
+
+  const handleReplySubmit = async (feedbackId: string) => {
+    if (!replyText.trim()) return;
+    await updateFeedbackReply(feedbackId, replyText.trim());
+    setFeedbacks((prev) =>
+      prev.map((f) => (f.id === feedbackId ? { ...f, admin_reply: replyText.trim() } : f))
+    );
+    setReplyingTo(null);
+    setReplyText("");
   };
 
   const filteredFeedbacks = feedbacks.filter((f) => {
@@ -117,8 +129,8 @@ export default function AdminProjectPage() {
   }
 
   return (
-<AdminAuth>
-        <div className="min-h-screen bg-surface-primary">
+    <AdminAuth>
+    <div className="min-h-screen bg-surface-primary">
       {/* Header */}
       <header className="h-14 border-b border-surface-tertiary flex items-center justify-between px-6">
         <div className="flex items-center gap-4">
@@ -229,55 +241,123 @@ export default function AdminProjectPage() {
               return (
                 <div
                   key={fb.id}
-                  className="grid grid-cols-[1fr_120px_100px_140px] gap-4 px-5 py-4 border-b border-surface-tertiary last:border-b-0 hover:bg-surface-card transition-colors items-center"
+                  className="border-b border-surface-tertiary last:border-b-0 hover:bg-surface-card transition-colors"
                 >
-                  {/* Comment + Author */}
-                  <div>
-                    <p className="text-sm text-content-primary leading-relaxed">
-                      {fb.comment}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs font-medium text-content-secondary">
-                        {fb.author}
-                      </span>
-                      <span className="text-xs text-content-muted">{date}</span>
-                      {fb.pin_x && (
-                        <span className="text-[10px] font-mono text-content-muted">
-                          📍 {Math.round(fb.pin_x)}%, {Math.round(fb.pin_y!)}%
+                  <div className="grid grid-cols-[1fr_120px_100px_140px] gap-4 px-5 py-4 items-center">
+                    {/* Comment + Author */}
+                    <div>
+                      <p className="text-sm text-content-primary leading-relaxed">
+                        {fb.comment}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs font-medium text-content-secondary">
+                          {fb.author}
                         </span>
-                      )}
+                        <span className="text-xs text-content-muted">{date}</span>
+                        {fb.pin_x && (
+                          <span className="text-[10px] font-mono text-content-muted">
+                            📍 {Math.round(fb.pin_x)}%, {Math.round(fb.pin_y!)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Page */}
+                    <span className="text-xs text-content-muted">
+                      {page?.label || "—"}
+                    </span>
+
+                    {/* Category */}
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-content-muted bg-surface-secondary px-2 py-1 rounded w-fit">
+                      {CATEGORY_LABELS[fb.category] || fb.category}
+                    </span>
+
+                    {/* Status Selector */}
+                    <div className="flex gap-1">
+                      {STATUS_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => handleStatusChange(fb.id, opt.value)}
+                          className={`text-[9px] font-mono uppercase tracking-wider px-2 py-1 rounded transition-colors ${
+                            fb.status === opt.value
+                              ? `${opt.bg} ${opt.color} font-bold`
+                              : "bg-surface-secondary text-content-muted hover:bg-surface-tertiary"
+                          }`}
+                        >
+                          {opt.value === "open"
+                            ? "○"
+                            : opt.value === "in_progress"
+                            ? "◐"
+                            : "●"}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  {/* Page */}
-                  <span className="text-xs text-content-muted">
-                    {page?.label || "—"}
-                  </span>
-
-                  {/* Category */}
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-content-muted bg-surface-secondary px-2 py-1 rounded w-fit">
-                    {CATEGORY_LABELS[fb.category] || fb.category}
-                  </span>
-
-                  {/* Status Selector */}
-                  <div className="flex gap-1">
-                    {STATUS_OPTIONS.map((opt) => (
+                  {/* Admin Reply Section */}
+                  <div className="px-5 pb-4">
+                    {fb.admin_reply ? (
+                      <div className="ml-4 pl-3 border-l-2 border-accent/30 bg-orange-50/30 rounded-r-md py-2 pr-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-accent font-bold">
+                            Rauscher Media
+                          </span>
+                        </div>
+                        <p className="text-sm text-content-secondary leading-relaxed">
+                          {fb.admin_reply}
+                        </p>
+                        <button
+                          onClick={() => {
+                            setReplyingTo(fb.id);
+                            setReplyText(fb.admin_reply || "");
+                          }}
+                          className="text-[10px] text-content-muted hover:text-accent mt-1"
+                        >
+                          Bearbeiten
+                        </button>
+                      </div>
+                    ) : replyingTo === fb.id ? null : (
                       <button
-                        key={opt.value}
-                        onClick={() => handleStatusChange(fb.id, opt.value)}
-                        className={`text-[9px] font-mono uppercase tracking-wider px-2 py-1 rounded transition-colors ${
-                          fb.status === opt.value
-                            ? `${opt.bg} ${opt.color} font-bold`
-                            : "bg-surface-secondary text-content-muted hover:bg-surface-tertiary"
-                        }`}
+                        onClick={() => {
+                          setReplyingTo(fb.id);
+                          setReplyText("");
+                        }}
+                        className="ml-4 text-xs text-accent hover:text-accent-dark font-medium"
                       >
-                        {opt.value === "open"
-                          ? "○"
-                          : opt.value === "in_progress"
-                          ? "◐"
-                          : "●"}
+                        + Antworten
                       </button>
-                    ))}
+                    )}
+
+                    {replyingTo === fb.id && (
+                      <div className="ml-4 mt-2 flex gap-2">
+                        <textarea
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          placeholder="Antwort an den Kunden..."
+                          rows={2}
+                          className="flex-1 border border-surface-tertiary rounded-md px-3 py-2 text-sm bg-white resize-none focus:outline-none focus:ring-1 focus:ring-accent"
+                          autoFocus
+                        />
+                        <div className="flex flex-col gap-1">
+                          <button
+                            onClick={() => handleReplySubmit(fb.id)}
+                            disabled={!replyText.trim()}
+                            className="bg-accent text-white text-[10px] font-mono uppercase tracking-wider px-3 py-1.5 rounded-md hover:bg-accent-dark transition-colors disabled:opacity-40"
+                          >
+                            Senden
+                          </button>
+                          <button
+                            onClick={() => {
+                              setReplyingTo(null);
+                              setReplyText("");
+                            }}
+                            className="text-[10px] text-content-muted hover:text-content-primary px-3 py-1.5"
+                          >
+                            Abbrechen
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
