@@ -1,19 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = "https://gvnyagjobcxhfwfekjaw.supabase.co";
+const supabaseAnonKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2bnlhZ2pvYmN4aGZ3ZmVramF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NDM2MjYsImV4cCI6MjA5MDUxOTYyNn0.x_RodMJNRLSE7N16I1tIYVNq3uQJzzfRfaA11uUkgRQ";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// ── Types ──
 
 export type Project = {
   id: string;
   name: string;
   slug: string;
   preview_url: string;
-  client_name: string | null;
-  status: "active" | "archived";
   created_at: string;
 };
 
@@ -23,7 +20,6 @@ export type Page = {
   label: string;
   path: string;
   sort_order: number;
-  created_at: string;
 };
 
 export type Feedback = {
@@ -32,15 +28,13 @@ export type Feedback = {
   page_id: string;
   author: string;
   comment: string;
-  category: "text" | "design" | "funktion" | "sonstiges";
+  category: string;
   status: "open" | "in_progress" | "done";
   pin_x: number | null;
   pin_y: number | null;
   admin_reply: string | null;
   created_at: string;
 };
-
-// ── API Functions ──
 
 export async function getProjectBySlug(slug: string) {
   const { data, error } = await supabase
@@ -72,6 +66,7 @@ export async function getFeedbacks(projectId: string) {
   return data as Feedback[];
 }
 
+// DIRECT FETCH — bypasses Supabase JS client entirely
 export async function createFeedback(feedback: {
   project_id: string;
   page_id: string;
@@ -81,16 +76,34 @@ export async function createFeedback(feedback: {
   pin_x?: number;
   pin_y?: number;
 }) {
-  const { error } = await supabase
-    .from("feedbacks")
-    .insert(feedback);
-  if (error) throw error;
+  console.log("[FB-DEBUG] createFeedback called with:", JSON.stringify(feedback));
+
+  const response = await fetch(
+    supabaseUrl + "/rest/v1/feedbacks",
+    {
+      method: "POST",
+      headers: {
+        "apikey": supabaseAnonKey,
+        "Authorization": "Bearer " + supabaseAnonKey,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal",
+      },
+      body: JSON.stringify(feedback),
+    }
+  );
+
+  console.log("[FB-DEBUG] fetch response:", response.status, response.statusText);
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error("[FB-DEBUG] Error body:", text);
+    throw new Error("Insert failed: " + response.status + " " + text);
+  }
+
+  console.log("[FB-DEBUG] INSERT SUCCESSFUL!");
 }
 
-export async function updateFeedbackStatus(
-  id: string,
-  status: "open" | "in_progress" | "done"
-) {
+export async function updateFeedbackStatus(id: string, status: string) {
   const { error } = await supabase
     .from("feedbacks")
     .update({ status })
@@ -98,15 +111,13 @@ export async function updateFeedbackStatus(
   if (error) throw error;
 }
 
-export async function updateFeedbackReply(id: string, admin_reply: string) {
+export async function updateAdminReply(id: string, reply: string) {
   const { error } = await supabase
     .from("feedbacks")
-    .update({ admin_reply })
+    .update({ admin_reply: reply })
     .eq("id", id);
   if (error) throw error;
 }
-
-// ── Admin Functions ──
 
 export async function getProjects() {
   const { data, error } = await supabase
@@ -121,7 +132,6 @@ export async function createProject(project: {
   name: string;
   slug: string;
   preview_url: string;
-  client_name?: string;
 }) {
   const { data, error } = await supabase
     .from("projects")
