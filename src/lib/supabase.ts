@@ -47,7 +47,7 @@ export async function getProjectBySlug(slug: string) {
     .from("projects")
     .select("*")
     .eq("slug", slug)
-    .single();
+    ;
   if (error) throw error;
   return data as Project;
 }
@@ -84,10 +84,10 @@ export async function createFeedback(feedback: {
   const { data, error } = await supabase
     .from("feedbacks")
     .insert(feedback)
-    .select()
-    .single();
+
+    ;
   if (error) throw error;
-  return data as Feedback;
+  return;
 }
 
 export async function updateFeedbackStatus(
@@ -129,8 +129,8 @@ export async function createProject(project: {
   const { data, error } = await supabase
     .from("projects")
     .insert(project)
-    .select()
-    .single();
+
+    ;
   if (error) throw error;
   return data as Project;
 }
