@@ -42,7 +42,6 @@ export function FeedbackPanel({
 
   return (
     <div className="w-[360px] border-l border-surface-tertiary bg-surface-primary flex flex-col shrink-0">
-      {/* Panel Header */}
       <div className="h-12 border-b border-surface-tertiary flex items-center px-4">
         <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-content-muted">
           Feedback ({feedbacks.length})
@@ -50,7 +49,6 @@ export function FeedbackPanel({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* New Feedback Form */}
         {newPin && (
           <NewFeedbackForm
             onSubmit={onSubmitFeedback}
@@ -58,7 +56,6 @@ export function FeedbackPanel({
           />
         )}
 
-        {/* Pinned Feedbacks */}
         {pinsWithNumbers.map((fb, i) => (
           <FeedbackCard
             key={fb.id}
@@ -69,7 +66,6 @@ export function FeedbackPanel({
           />
         ))}
 
-        {/* Feedbacks without pins */}
         {feedbacksWithoutPins.map((fb) => (
           <FeedbackCard
             key={fb.id}
@@ -79,7 +75,6 @@ export function FeedbackPanel({
           />
         ))}
 
-        {/* Empty State */}
         {feedbacks.length === 0 && !newPin && (
           <div className="p-8 text-center">
             <p className="text-content-muted text-sm">
@@ -150,7 +145,6 @@ function FeedbackCard({
         </span>
       )}
 
-      {/* Admin Reply */}
       {feedback.admin_reply && (
         <div className="mt-3 pl-3 border-l-2 border-accent/30 bg-orange-50/30 rounded-r-md py-2 pr-3">
           <span className="text-[10px] font-mono uppercase tracking-wider text-accent font-bold">
@@ -177,23 +171,48 @@ function NewFeedbackForm({
   const [category, setCategory] = useState("sonstiges");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!author.trim() || !comment.trim() || submitting) return;
+  const doSubmit = async () => {
+    console.log("[FB-DEBUG] doSubmit called", { author, comment, category, submitting });
+    if (!author.trim() || !comment.trim() || submitting) {
+      console.log("[FB-DEBUG] Early return - empty fields or already submitting");
+      return;
+    }
     setSubmitting(true);
     setError(null);
+    console.log("[FB-DEBUG] Calling onSubmit...");
     try {
       await onSubmit({ author: author.trim(), comment: comment.trim(), category });
-      setAuthor("");
-      setComment("");
+      console.log("[FB-DEBUG] onSubmit succeeded!");
+      setSuccess(true);
+      setTimeout(() => onCancel(), 1200);
     } catch (err) {
+      console.error("[FB-DEBUG] onSubmit error:", err);
       setError("Fehler beim Speichern. Bitte versuche es erneut.");
-      console.error("Feedback submit error:", err);
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    console.log("[FB-DEBUG] handleSubmit (form onSubmit) fired");
+    e.preventDefault();
+    await doSubmit();
+  };
+
+  if (success) {
+    return (
+      <div className="p-4 border-b-2 border-green-500 bg-green-50">
+        <div className="flex items-center justify-center gap-2 py-3">
+          <span className="text-green-600 text-lg">✓</span>
+          <span className="text-green-700 font-headline text-sm uppercase tracking-wider">
+            Feedback gespeichert!
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form
@@ -230,7 +249,6 @@ function NewFeedbackForm({
         className="w-full border border-surface-tertiary rounded-md px-3 py-2 text-sm mb-2 bg-white resize-none focus:outline-none focus:ring-1 focus:ring-accent"
       />
 
-      {/* Category Selector */}
       <div className="flex gap-1 mb-3">
         {CATEGORIES.map((cat) => (
           <button
@@ -253,7 +271,11 @@ function NewFeedbackForm({
       )}
 
       <button
-        type="submit"
+        type="button"
+        onClick={() => {
+          console.log("[FB-DEBUG] Button clicked directly!", { author: author.trim(), comment: comment.trim(), submitting });
+          doSubmit();
+        }}
         disabled={!author.trim() || !comment.trim() || submitting}
         className="w-full bg-accent text-white font-headline text-sm uppercase tracking-wider py-2 rounded-md hover:bg-accent-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >

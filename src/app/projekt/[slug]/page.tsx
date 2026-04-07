@@ -31,7 +31,6 @@ export default function ProjektPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load project data
   useEffect(() => {
     async function load() {
       try {
@@ -51,7 +50,6 @@ export default function ProjektPage() {
     load();
   }, [slug]);
 
-  // Realtime subscription for new feedbacks
   useEffect(() => {
     if (!project) return;
     const channel = supabase
@@ -65,7 +63,6 @@ export default function ProjektPage() {
           filter: `project_id=eq.${project.id}`,
         },
         () => {
-          // Reload feedbacks on any change
           getFeedbacks(project.id).then(setFeedbacks);
         }
       )
@@ -91,9 +88,13 @@ export default function ProjektPage() {
     comment: string;
     category: string;
   }) => {
-    if (!project || !activePage) return;
+    console.log("[FB-DEBUG] handleSubmitFeedback called", { project: !!project, activePage: !!activePage, newPin, data });
+    if (!project || !activePage) {
+      console.log("[FB-DEBUG] ABORT: project or activePage is null");
+      return;
+    }
     try {
-      await createFeedback({
+      const payload = {
         project_id: project.id,
         page_id: activePage.id,
         author: data.author,
@@ -101,15 +102,16 @@ export default function ProjektPage() {
         category: data.category,
         pin_x: newPin?.x,
         pin_y: newPin?.y,
-      });
-      setNewPin(null);
-      setCommentMode(false);
-      // Refresh feedbacks immediately so the comment is visible right away
+      };
+      console.log("[FB-DEBUG] Calling createFeedback with:", payload);
+      await createFeedback(payload);
+      console.log("[FB-DEBUG] createFeedback SUCCESS");
       const updated = await getFeedbacks(project.id);
+      console.log("[FB-DEBUG] Refreshed feedbacks:", updated.length);
       setFeedbacks(updated);
     } catch (err) {
-      console.error("Failed to save feedback:", err);
-      throw err; // Re-throw so the form can show the error
+      console.error("[FB-DEBUG] createFeedback FAILED:", err);
+      throw err;
     }
   };
 
@@ -138,7 +140,6 @@ export default function ProjektPage() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      {/* Header */}
       <header className="h-14 border-b border-surface-tertiary flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-4">
           <Logo />
@@ -149,7 +150,6 @@ export default function ProjektPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Page Selector */}
           <select
             value={activePage?.id || ""}
             onChange={(e) => {
@@ -169,7 +169,6 @@ export default function ProjektPage() {
             ))}
           </select>
 
-          {/* Comment Mode Toggle */}
           <button
             onClick={() => {
               setCommentMode(!commentMode);
@@ -184,7 +183,6 @@ export default function ProjektPage() {
             {commentMode ? "✕ Abbrechen" : "+ Kommentar"}
           </button>
 
-          {/* Toggle Panel */}
           <button
             onClick={() => setPanelOpen(!panelOpen)}
             className="text-sm text-content-muted hover:text-content-primary px-2 py-1.5"
@@ -194,9 +192,7 @@ export default function ProjektPage() {
         </div>
       </header>
 
-      {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Preview Area */}
         <div className="flex-1 relative">
           <WebsitePreview
             previewUrl={`${project.preview_url}${activePage?.path || "/"}`}
@@ -212,7 +208,6 @@ export default function ProjektPage() {
           />
         </div>
 
-        {/* Feedback Panel */}
         {panelOpen && (
           <FeedbackPanel
             feedbacks={pageFeedbacks}
