@@ -99,8 +99,8 @@ export default function ProjektPage() {
         author: data.author,
         comment: data.comment,
         category: data.category,
-        pin_x: newPin?.x ?? null,
-        pin_y: newPin?.y ?? null,
+        pin_x: newPin?.x,
+        pin_y: newPin?.y,
       });
       setNewPin(null);
       setCommentMode(false);
