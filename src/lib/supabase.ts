@@ -43,17 +43,17 @@ export type Feedback = {
 // ── API Functions ──
 
 export async function getProjectBySlug(slug: string) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("projects")
     .select("*")
     .eq("slug", slug)
-    ;
+    .single();
   if (error) throw error;
   return data as Project;
 }
 
 export async function getPages(projectId: string) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("pages")
     .select("*")
     .eq("project_id", projectId)
@@ -63,7 +63,7 @@ export async function getPages(projectId: string) {
 }
 
 export async function getFeedbacks(projectId: string) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("feedbacks")
     .select("*")
     .eq("project_id", projectId)
@@ -83,11 +83,8 @@ export async function createFeedback(feedback: {
 }) {
   const { error } = await supabase
     .from("feedbacks")
-    .insert(feedback)
-
-    ;
+    .insert(feedback);
   if (error) throw error;
-  return;
 }
 
 export async function updateFeedbackStatus(
@@ -112,7 +109,7 @@ export async function updateFeedbackReply(id: string, admin_reply: string) {
 // ── Admin Functions ──
 
 export async function getProjects() {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("projects")
     .select("*")
     .order("created_at", { ascending: false });
@@ -126,11 +123,11 @@ export async function createProject(project: {
   preview_url: string;
   client_name?: string;
 }) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("projects")
     .insert(project)
-
-    ;
+    .select()
+    .single();
   if (error) throw error;
   return data as Project;
 }
